@@ -93,7 +93,7 @@ cd ../server && python main.py
 
 ```
 Skill（流程逻辑）  →  MCP（查询接口）  →  数据库（知识存储）
-     不变               按需检索             167 个 API
+                      按需检索             167 个 API
 ```
 
 SKILL.md 只定义"怎么做"，具体 API 参数通过 MCP 搜索知识库获取，而非硬编码在 Skill 文件中。
