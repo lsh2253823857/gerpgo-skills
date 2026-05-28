@@ -1,103 +1,103 @@
-# gerpgo-skills
+# GerpGo Skills — 积加ERP智能知识库
 
-积加ERP开放平台 Claude Code Skills — 通过自然语言调用积加ERP API，查看评论、库存、广告等业务数据。
+基于 SQLite + MCP 的企业知识库系统，集成积加ERP开放平台 167 个 API 接口文档，支持全文搜索和 AI Agent 检索。
 
-## 技能列表
+## 架构
 
-### gerpgo-api
-
-积加ERP开放平台API调用技能，支持运营、采购、物流、库存、财务等 **167 个接口**。
-
-**功能：**
-- 自然语言查评论（按店铺/市场/星级过滤）
-- 查库存、采购单、FBA货件、财务结算
-- 查商品推广广告活动报表
-- 数据导出为 Excel
-
-**使用方式：**
 ```
-用户："看下某品牌店美国站的差评"
-→ 自动定位接口 → 调用API → 输出摘要
+Claude Code Agent
+       │ MCP 协议
+       ▼
+  MCP Server (Python)     ← 4 个工具：搜索/详情/分类/统计
+       │ sqlite3
+       ▼
+  SQLite 知识库数据库      ← 188 篇文档 + FTS5 全文索引
 ```
-
-## 优化历程
-
-`gerpgo-api` 经过 4 轮迭代优化，评分从 **37.8 → 79.0**（+41.2）。
-
-| 轮次 | 方式 | 目标维度 | 分数 | Δ |
-|:---:|------|---------|:---:|:-:|
-| 基线 | 初始评估 | — | 37.8 | — |
-| R1 | 结构重组 | 工作流清晰度 | 57.2 | +19.4 |
-| R2 | 插入检查点 | 检查点设计 | 61.0 | +3.8 |
-| R3 | 补充映射表 | 指令具体性 | 69.0 | +8.0 |
-| 重写 | 从零重构 | 全维度 | **79.0** | **+10.0** |
-
-### 各轮改进详情
-
-**R1 — 工作流清晰度（4→7）**
-- 将静态文档重构为 Phase 0/1/2 可执行流程
-- 每步明确输入/输出
-- 添加异常处理表
-
-**R2 — 检查点设计（3→7）**
-- Phase 0 复述确认 + 纠错回路
-- Phase 1 调用前确认 endpoint/参数
-- Phase 2 预览数据后询问输出方式
-- 异常场景关联检查点
-
-**R3 — 指令具体性（6→8）**
-- 新增用户意图→API 映射表（9 种场景）
-- 输出模板：评论/库存/订单摘要格式
-- 常见站点 ID 速查
-
-**探索性重写 — 整体重构（69.0→79.0）**
-- 合并 6 个独立章节为单一连贯流程
-- 三要素提取法（店铺/市场/数据）结构化理解需求
-- 映射表嵌入 Phase 0，命令示例嵌入 Phase 1
-- 去重精简，信息密度提升
-
-### 评分维度说明
-
-| 维度 | 权重 | 说明 |
-|------|:----:|------|
-| 1. Frontmatter | 8 | name/description 规范 |
-| 2. 工作流清晰度 | 15 | 步骤明确、有序号、有输入/输出 |
-| 3. 边界条件 | 10 | 异常处理、fallback |
-| 4. 检查点设计 | 7 | 用户确认、防止失控 |
-| 5. 指令具体性 | 15 | 参数/格式/示例可直接执行 |
-| 6. 资源整合 | 5 | 引用路径正确可达 |
-| 7. 整体架构 | 15 | 结构层次清晰 |
-| 8. 实测表现 | 25 | 真实 prompt 输出质量 |
-
----
-
-## 环境要求
-
-- Claude Code
-- Python 3.8+
-- requests 库（`pip install requests`）
-- openpyxl 库（如需导出 Excel，`pip install openpyxl`）
 
 ## 快速开始
 
-1. 克隆仓库：
-   ```bash
-   git clone https://github.com/lsh2253823857/gerpgo-skills.git
-   ```
+```bash
+# 1. 安装依赖
+pip install -r requirements.txt
 
-2. 复制到 Claude Code skills 目录：
-   ```bash
-   cp -r gerpgo-skills/* ~/.claude/skills/
-   ```
+# 2. 初始化数据库
+cd db && sqlite3 enterprise_kb.db < schema.sql && python seed_data.py
 
-3. 设置积加ERP凭证：
-   ```bash
-   export GERPGO_APP_KEY="your_key"
-   export GERPGO_APP_ID="your_id"
-   ```
+# 3. 导入积加API文档
+python import_gerpgo.py
 
-4. 在 Claude Code 中使用：
-   ```
-   你: "查一下美国站某品牌店的库存"
-   Claude: [自动调用API并返回结果]
-   ```
+# 4. 启动 MCP Server
+cd ../server && python main.py
+```
+
+## 目录结构
+
+```
+├── config.py                    # 数据库连接配置
+├── requirements.txt             # 依赖（mcp）
+├── db/
+│   ├── schema.sql               # 8 表 + FTS5 + 触发器 + 索引
+│   ├── seed_data.py             # 示例数据填充
+│   ├── import_gerpgo.py         # 积加API文档导入脚本
+│   └── enterprise_kb.db         # SQLite 数据库文件
+├── server/
+│   ├── main.py                  # MCP Server 入口
+│   ├── documents.py             # 文档搜索（FTS5 + LIKE）
+│   ├── categories.py            # 分类树查询（递归CTE）
+│   └── dashboard.py             # 统计概览
+└── skills/
+    └── gerpgo-api/
+        ├── SKILL.md             # Skill 定义（引用知识库）
+        ├── scripts/
+        │   └── gerpgo_client.py # 积加API调用客户端
+        └── test-prompts.json    # 测试用例
+```
+
+## 数据库设计
+
+| 表 | 用途 | 学的概念 |
+|----|------|----------|
+| users | 用户与角色 | 枚举约束、唯一索引 |
+| categories | 分类树 | 自引用外键、递归CTE |
+| documents | 知识文档 | 主外键、FTS关联 |
+| tags | 标签 | 唯一约束 |
+| document_tags | 多对多关联 | 复合主键、级联删除 |
+| document_versions | 版本历史 | 审计追踪 |
+| attachments | 文件附件 | BLOB vs 路径设计 |
+| search_log | 搜索日志 | 聚合分析 |
+
+## MCP 工具
+
+| 工具 | 功能 |
+|------|------|
+| `search_knowledge(query, category, tag, limit)` | 全文搜索知识库 |
+| `get_document_detail(document_id)` | 获取文档详情+版本+附件 |
+| `browse_categories(parent_id)` | 浏览分类树 |
+| `show_dashboard()` | 统计概览 |
+
+## 积加API覆盖范围
+
+| 分类 | 接口数 | 示例 |
+|------|--------|------|
+| 运营 — 评论与反馈 | Review, Feedback, 买家之声 |
+| 运营 — 订单管理 | 订单查询、退款、退货、换货 |
+| 运营 — 促销活动 | 促销、优惠券、秒杀 |
+| 物流 — FBA | FBA货件、配送、移除 |
+| 库存 — 库存管理 | 库存查询、调拨、出入库 |
+| 采购 — 采购管理 | 采购单、供应商 |
+| 财务 — 利润分析 | 利润、结算、成本 |
+| 广告 — 广告数据 | 广告报表、关键词、ASIN |
+| 产品 — 产品管理 | 产品资料、SKU、品类 |
+
+## Skill 集成模式
+
+```
+Skill（流程逻辑）  →  MCP（查询接口）  →  数据库（知识存储）
+     不变               按需检索             167 个 API
+```
+
+SKILL.md 只定义"怎么做"，具体 API 参数通过 MCP 搜索知识库获取，而非硬编码在 Skill 文件中。
+
+## License
+
+MIT

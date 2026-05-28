@@ -1,3 +1,6 @@
-# 大二进制文件
-*.png
-*.gif
+__pycache__/
+*.pyc
+*.pyo
+.env
+*.db-journal
+*.db-wal
