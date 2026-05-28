@@ -1,4 +1,4 @@
-# GerpGo Skills — 积加ERP智能知识库
+# GerpGo MCP — 积加ERP智能知识库
 
 基于 SQLite + MCP 的企业知识库系统，集成积加ERP开放平台 167 个 API 接口文档，支持全文搜索和 AI Agent 检索。
 
